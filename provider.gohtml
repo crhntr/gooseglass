@@ -1,0 +1,110 @@
+{{define "head" -}}
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="color-scheme" content="light dark">
+	<meta name="muxt-version" content='{{.MuxtVersion}}'>
+
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" crossorigin="anonymous">
+	<script type='application/javascript' src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" integrity="sha384-Akqfrbj/HpNVo8k11SXBb6TlBWmXXlYQrCSqEWmyKJe+hDm3Z/B2WVG4smwBkRVm" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/htmx-ext-response-targets@2.0.2" crossorigin="anonymous"></script>
+{{- end}}
+
+{{define "migrations status row" -}}
+	<tr {{with .Source}}data-version='{{.Version}}'{{end}}>
+      {{$state := .State}}
+		<td>{{with .Source}}{{.Version}}{{end}}</td>
+		<td>{{with .Source}}{{.Type}}{{end}}</td>
+		<td>{{with .Source}}{{.Path}}{{end}}</td>
+		<td>{{$state}}</td>
+		<td>{{if not .AppliedAt.IsZero}}{{.AppliedAt}}{{else}}<em>N/A</em>{{end}}</td>
+	</tr>
+{{- end}}
+
+{{define "Status" -}}{{/* gotype: github.com/pressly/goose/v3.MigrationStatus*/}}
+<table class='status-table' hx-trigger='refreshMigrations, every 30s' hx-get='{{.Path.Status}}' hx-select='.status-table'>
+	<caption>Migrations Status</caption>
+	<thead>
+	<tr>
+		<th>Version</th>
+		<th>Type</th>
+		<th>Path</th>
+		<th>State</th>
+		<th>Applied At</th>
+	</tr>
+	</thead>
+	<tbody>
+  {{range .Result}}
+      {{template "migrations status row" .}}
+  {{end -}}
+	</tbody>
+</table>
+{{- end}}
+
+{{define "migrate result"}}
+    {{/* gotype: github.com/pressly/goose/v3.MigrationResult*/}}
+    {{if  .Error}}
+			<div>{{.}}</div>
+    {{else}}
+			<div>
+          {{with .Source}}<div>[{{printf "%0d" .Version}}]: <strong>{{.Type}}</strong> {{.Path}} <em>{{$.Duration}}</em></div>{{end}}
+			</div>
+    {{end}}
+{{end}}
+
+{{define "POST /up Up(ctx)"}}
+    {{if .Err}}
+			<p>{{.Err.Error}}</p>
+    {{else if .Result}}
+			<div>
+				<h3>Migrate Up Succeeded</h3>
+          {{range (.Header "HX-Trigger" `{"refreshMigrations":{"target" : ".status-table"}}`).Result}}
+              {{template "migrate result" .}}
+          {{end}}
+			</div>
+    {{else}}
+			<div>
+				<h3>Fully Migrated</h3>
+			</div>
+    {{end}}
+{{end}}
+
+{{define "POST /down Down(ctx)"}}
+    {{with .Err}}
+			<p>{{.Error}}</p>
+    {{else}}
+			<div>
+				<h3>Migrate Down Succeeded</h3>
+
+          {{template "migrate result" (.Header "HX-Trigger" `{"refreshMigrations":{"target" : ".status-table"}}`).Result}}
+			</div>
+    {{end}}
+{{end}}
+
+{{define "GET / Status(ctx)"}}
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+      {{template "head" .}}
+		<title>Goose</title>
+	</head>
+	<body hx-ext='response-targets'>
+	<header class="container">
+		<hgroup>
+			<h1>Goose</h1>
+			<p>Database Migration Management UI</p>
+		</hgroup>
+		<nav><ul></ul></nav>
+	</header>
+	<main id="status" class="container" hx-target='closest #status'>
+		<section>{{with .Err}}<pre style='padding: 1rem'>{{.}}</pre>{{else}}{{template "Status" .}}{{end}}</section>
+		<button hx-get='{{.Path.Status}}' hx-select='#status' hx-swap='outerHTML'>Refresh</button>
+	</main>
+	<section class='container'>
+		<h2>Migrate</h2>
+		<button hx-post='{{.Path.Up}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>Up</button>
+		<button hx-post='{{.Path.Down}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>Down</button>
+		<div id='migrate-result'></div>
+	</section>
+	</body>
+	</html>
+{{end}}
