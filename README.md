@@ -1,6 +1,6 @@
 # Goose Glass [![Go Reference](https://pkg.go.dev/badge/github.com/crhntr/gooseglass.svg)](https://pkg.go.dev/github.com/crhntr/gooseglass) ![Go Workflow](https://github.com/crhntr/gooseglass/actions/workflows/go.yml/badge.svg)
 
-![An outline of a Goose on a glass pane.](./assets/graphic.png "GooseGlass")
+<img src="./assets/graphic.png" width="100" alt="An outline of a Goose on a glass pane." align=right>
 
 This package creates a few web-pages to migrate a database.
 It should work with any database Goose has a provider for (PostgreSQL, SQLite, MySQL...).
