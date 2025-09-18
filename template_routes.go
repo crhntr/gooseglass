@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path"
 	"strconv"
 
 	goose "github.com/pressly/goose/v3"
@@ -17,7 +18,9 @@ import (
 type migrationProvider interface {
 	Status(ctx context.Context) ([]*goose.MigrationStatus, error)
 	Down(ctx context.Context) (*goose.MigrationResult, error)
+	DownTo(ctx context.Context, version int64) ([]*goose.MigrationResult, error)
 	Up(ctx context.Context) ([]*goose.MigrationResult, error)
+	UpTo(ctx context.Context, version int64) ([]*goose.MigrationResult, error)
 }
 
 func routes(mux *http.ServeMux, receiver migrationProvider) {
@@ -109,6 +112,74 @@ func routes(mux *http.ServeMux, receiver migrationProvider) {
 		response.WriteHeader(statusCode)
 		_, _ = buf.WriteTo(response)
 	})
+	mux.HandleFunc("POST /down-to/{version}", func(response http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		versionParsed, err := strconv.ParseInt(request.PathValue("version"), 10, 64)
+		if err != nil {
+			var zv []*goose.MigrationResult
+			rd := newtemplateData(receiver, response, request, zv, false, err)
+			buf := bytes.NewBuffer(nil)
+			if err := templates.ExecuteTemplate(buf, "POST /down-to/{version} DownTo(ctx, version)", rd); err != nil {
+				slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+				http.Error(response, "failed to render page", http.StatusInternalServerError)
+				return
+			}
+			sc := cmp.Or(rd.statusCode, http.StatusBadRequest)
+			if rd.redirectURL != "" {
+				http.Redirect(response, request, rd.redirectURL, sc)
+				return
+			}
+			if contentType := response.Header().Get("content-type"); contentType == "" {
+				response.Header().Set("content-type", "text/html; charset=utf-8")
+			}
+			response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+			response.WriteHeader(sc)
+			_, _ = buf.WriteTo(response)
+			return
+		}
+		version := versionParsed
+		result, err := receiver.DownTo(ctx, version)
+		if err != nil {
+			var zv []*goose.MigrationResult
+			rd := newtemplateData(receiver, response, request, zv, false, err)
+			buf := bytes.NewBuffer(nil)
+			if err := templates.ExecuteTemplate(buf, "POST /down-to/{version} DownTo(ctx, version)", rd); err != nil {
+				slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+				http.Error(response, "failed to render page", http.StatusInternalServerError)
+				return
+			}
+			sc := cmp.Or(rd.statusCode, http.StatusInternalServerError)
+			if rd.redirectURL != "" {
+				http.Redirect(response, request, rd.redirectURL, sc)
+				return
+			}
+			if contentType := response.Header().Get("content-type"); contentType == "" {
+				response.Header().Set("content-type", "text/html; charset=utf-8")
+			}
+			response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+			response.WriteHeader(sc)
+			_, _ = buf.WriteTo(response)
+			return
+		}
+		td := newtemplateData(receiver, response, request, result, true, nil)
+		buf := bytes.NewBuffer(nil)
+		if err := templates.ExecuteTemplate(buf, "POST /down-to/{version} DownTo(ctx, version)", td); err != nil {
+			slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+			http.Error(response, "failed to render page", http.StatusInternalServerError)
+			return
+		}
+		statusCode := cmp.Or(td.statusCode, http.StatusOK)
+		if td.redirectURL != "" {
+			http.Redirect(response, request, td.redirectURL, statusCode)
+			return
+		}
+		if contentType := response.Header().Get("content-type"); contentType == "" {
+			response.Header().Set("content-type", "text/html; charset=utf-8")
+		}
+		response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+		response.WriteHeader(statusCode)
+		_, _ = buf.WriteTo(response)
+	})
 	mux.HandleFunc("POST /up", func(response http.ResponseWriter, request *http.Request) {
 		ctx := request.Context()
 		result, err := receiver.Up(ctx)
@@ -137,6 +208,74 @@ func routes(mux *http.ServeMux, receiver migrationProvider) {
 		td := newtemplateData(receiver, response, request, result, true, nil)
 		buf := bytes.NewBuffer(nil)
 		if err := templates.ExecuteTemplate(buf, "POST /up Up(ctx)", td); err != nil {
+			slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+			http.Error(response, "failed to render page", http.StatusInternalServerError)
+			return
+		}
+		statusCode := cmp.Or(td.statusCode, http.StatusOK)
+		if td.redirectURL != "" {
+			http.Redirect(response, request, td.redirectURL, statusCode)
+			return
+		}
+		if contentType := response.Header().Get("content-type"); contentType == "" {
+			response.Header().Set("content-type", "text/html; charset=utf-8")
+		}
+		response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+		response.WriteHeader(statusCode)
+		_, _ = buf.WriteTo(response)
+	})
+	mux.HandleFunc("POST /up-to/{version}", func(response http.ResponseWriter, request *http.Request) {
+		ctx := request.Context()
+		versionParsed, err := strconv.ParseInt(request.PathValue("version"), 10, 64)
+		if err != nil {
+			var zv []*goose.MigrationResult
+			rd := newtemplateData(receiver, response, request, zv, false, err)
+			buf := bytes.NewBuffer(nil)
+			if err := templates.ExecuteTemplate(buf, "POST /up-to/{version} UpTo(ctx, version)", rd); err != nil {
+				slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+				http.Error(response, "failed to render page", http.StatusInternalServerError)
+				return
+			}
+			sc := cmp.Or(rd.statusCode, http.StatusBadRequest)
+			if rd.redirectURL != "" {
+				http.Redirect(response, request, rd.redirectURL, sc)
+				return
+			}
+			if contentType := response.Header().Get("content-type"); contentType == "" {
+				response.Header().Set("content-type", "text/html; charset=utf-8")
+			}
+			response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+			response.WriteHeader(sc)
+			_, _ = buf.WriteTo(response)
+			return
+		}
+		version := versionParsed
+		result, err := receiver.UpTo(ctx, version)
+		if err != nil {
+			var zv []*goose.MigrationResult
+			rd := newtemplateData(receiver, response, request, zv, false, err)
+			buf := bytes.NewBuffer(nil)
+			if err := templates.ExecuteTemplate(buf, "POST /up-to/{version} UpTo(ctx, version)", rd); err != nil {
+				slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
+				http.Error(response, "failed to render page", http.StatusInternalServerError)
+				return
+			}
+			sc := cmp.Or(rd.statusCode, http.StatusInternalServerError)
+			if rd.redirectURL != "" {
+				http.Redirect(response, request, rd.redirectURL, sc)
+				return
+			}
+			if contentType := response.Header().Get("content-type"); contentType == "" {
+				response.Header().Set("content-type", "text/html; charset=utf-8")
+			}
+			response.Header().Set("content-length", strconv.Itoa(buf.Len()))
+			response.WriteHeader(sc)
+			_, _ = buf.WriteTo(response)
+			return
+		}
+		td := newtemplateData(receiver, response, request, result, true, nil)
+		buf := bytes.NewBuffer(nil)
+		if err := templates.ExecuteTemplate(buf, "POST /up-to/{version} UpTo(ctx, version)", td); err != nil {
 			slog.ErrorContext(request.Context(), "failed to render page", slog.String("path", request.URL.Path), slog.String("pattern", request.Pattern), slog.String("error", err.Error()))
 			http.Error(response, "failed to render page", http.StatusInternalServerError)
 			return
@@ -228,8 +367,16 @@ func (TemplateRoutePaths) Down() string {
 	return "/down"
 }
 
+func (TemplateRoutePaths) DownTo(version int64) string {
+	return "/" + path.Join("down-to", strconv.FormatInt(int64(version), 10))
+}
+
 func (TemplateRoutePaths) Up() string {
 	return "/up"
+}
+
+func (TemplateRoutePaths) UpTo(version int64) string {
+	return "/" + path.Join("up-to", strconv.FormatInt(int64(version), 10))
 }
 
 // MIT License

@@ -22,6 +22,20 @@ type Provider struct {
 		result1 *goose.MigrationResult
 		result2 error
 	}
+	DownToStub        func(context.Context, int64) ([]*goose.MigrationResult, error)
+	downToMutex       sync.RWMutex
+	downToArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+	}
+	downToReturns struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}
+	downToReturnsOnCall map[int]struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}
 	StatusStub        func(context.Context) ([]*goose.MigrationStatus, error)
 	statusMutex       sync.RWMutex
 	statusArgsForCall []struct {
@@ -45,6 +59,20 @@ type Provider struct {
 		result2 error
 	}
 	upReturnsOnCall map[int]struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}
+	UpToStub        func(context.Context, int64) ([]*goose.MigrationResult, error)
+	upToMutex       sync.RWMutex
+	upToArgsForCall []struct {
+		arg1 context.Context
+		arg2 int64
+	}
+	upToReturns struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}
+	upToReturnsOnCall map[int]struct {
 		result1 []*goose.MigrationResult
 		result2 error
 	}
@@ -112,6 +140,71 @@ func (fake *Provider) DownReturnsOnCall(i int, result1 *goose.MigrationResult, r
 	}
 	fake.downReturnsOnCall[i] = struct {
 		result1 *goose.MigrationResult
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Provider) DownTo(arg1 context.Context, arg2 int64) ([]*goose.MigrationResult, error) {
+	fake.downToMutex.Lock()
+	ret, specificReturn := fake.downToReturnsOnCall[len(fake.downToArgsForCall)]
+	fake.downToArgsForCall = append(fake.downToArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+	}{arg1, arg2})
+	stub := fake.DownToStub
+	fakeReturns := fake.downToReturns
+	fake.recordInvocation("DownTo", []interface{}{arg1, arg2})
+	fake.downToMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *Provider) DownToCallCount() int {
+	fake.downToMutex.RLock()
+	defer fake.downToMutex.RUnlock()
+	return len(fake.downToArgsForCall)
+}
+
+func (fake *Provider) DownToCalls(stub func(context.Context, int64) ([]*goose.MigrationResult, error)) {
+	fake.downToMutex.Lock()
+	defer fake.downToMutex.Unlock()
+	fake.DownToStub = stub
+}
+
+func (fake *Provider) DownToArgsForCall(i int) (context.Context, int64) {
+	fake.downToMutex.RLock()
+	defer fake.downToMutex.RUnlock()
+	argsForCall := fake.downToArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Provider) DownToReturns(result1 []*goose.MigrationResult, result2 error) {
+	fake.downToMutex.Lock()
+	defer fake.downToMutex.Unlock()
+	fake.DownToStub = nil
+	fake.downToReturns = struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Provider) DownToReturnsOnCall(i int, result1 []*goose.MigrationResult, result2 error) {
+	fake.downToMutex.Lock()
+	defer fake.downToMutex.Unlock()
+	fake.DownToStub = nil
+	if fake.downToReturnsOnCall == nil {
+		fake.downToReturnsOnCall = make(map[int]struct {
+			result1 []*goose.MigrationResult
+			result2 error
+		})
+	}
+	fake.downToReturnsOnCall[i] = struct {
+		result1 []*goose.MigrationResult
 		result2 error
 	}{result1, result2}
 }
@@ -239,6 +332,71 @@ func (fake *Provider) UpReturnsOnCall(i int, result1 []*goose.MigrationResult, r
 		})
 	}
 	fake.upReturnsOnCall[i] = struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Provider) UpTo(arg1 context.Context, arg2 int64) ([]*goose.MigrationResult, error) {
+	fake.upToMutex.Lock()
+	ret, specificReturn := fake.upToReturnsOnCall[len(fake.upToArgsForCall)]
+	fake.upToArgsForCall = append(fake.upToArgsForCall, struct {
+		arg1 context.Context
+		arg2 int64
+	}{arg1, arg2})
+	stub := fake.UpToStub
+	fakeReturns := fake.upToReturns
+	fake.recordInvocation("UpTo", []interface{}{arg1, arg2})
+	fake.upToMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *Provider) UpToCallCount() int {
+	fake.upToMutex.RLock()
+	defer fake.upToMutex.RUnlock()
+	return len(fake.upToArgsForCall)
+}
+
+func (fake *Provider) UpToCalls(stub func(context.Context, int64) ([]*goose.MigrationResult, error)) {
+	fake.upToMutex.Lock()
+	defer fake.upToMutex.Unlock()
+	fake.UpToStub = stub
+}
+
+func (fake *Provider) UpToArgsForCall(i int) (context.Context, int64) {
+	fake.upToMutex.RLock()
+	defer fake.upToMutex.RUnlock()
+	argsForCall := fake.upToArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *Provider) UpToReturns(result1 []*goose.MigrationResult, result2 error) {
+	fake.upToMutex.Lock()
+	defer fake.upToMutex.Unlock()
+	fake.UpToStub = nil
+	fake.upToReturns = struct {
+		result1 []*goose.MigrationResult
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *Provider) UpToReturnsOnCall(i int, result1 []*goose.MigrationResult, result2 error) {
+	fake.upToMutex.Lock()
+	defer fake.upToMutex.Unlock()
+	fake.UpToStub = nil
+	if fake.upToReturnsOnCall == nil {
+		fake.upToReturnsOnCall = make(map[int]struct {
+			result1 []*goose.MigrationResult
+			result2 error
+		})
+	}
+	fake.upToReturnsOnCall[i] = struct {
 		result1 []*goose.MigrationResult
 		result2 error
 	}{result1, result2}

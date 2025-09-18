@@ -9,19 +9,16 @@
 	<script src="https://cdn.jsdelivr.net/npm/htmx-ext-response-targets@2.0.2" crossorigin="anonymous"></script>
 {{- end}}
 
-{{define "migrations status row" -}}
-	<tr {{with .Source}}data-version='{{.Version}}'{{end}}>
-      {{$state := .State}}
-		<td>{{with .Source}}{{.Version}}{{end}}</td>
-		<td>{{with .Source}}{{.Type}}{{end}}</td>
-		<td>{{with .Source}}{{.Path}}{{end}}</td>
-		<td>{{$state}}</td>
-		<td>{{if not .AppliedAt.IsZero}}{{.AppliedAt}}{{else}}<em>N/A</em>{{end}}</td>
-	</tr>
+{{define "pending source buttons" -}}
+	<button hx-post='/up-to/{{.Version}}' hx-target='#migrate-result' hx-target='click'>Up to {{.Version}}</button>
 {{- end}}
 
-{{define "Status" -}}{{/* gotype: github.com/pressly/goose/v3.MigrationStatus*/}}
-<table class='status-table' hx-trigger='refreshMigrations, every 30s' hx-get='{{.Path.Status}}' hx-select='.status-table'>
+{{define "applied source buttons" -}}
+	<button hx-post='/down-to/{{.Version}}' hx-target='#migrate-result' hx-target='click'>Down to {{.Version}}</button>
+{{- end}}
+
+{{define "status-table" -}}{{/* gotype: github.com/pressly/goose/v3.MigrationStatus*/}}
+<table id='status-table' hx-trigger='refreshMigrations, every 30s' hx-get='{{.Path.Status}}' hx-target='this'>
 	<caption>Migrations Status</caption>
 	<thead>
 	<tr>
@@ -30,14 +27,55 @@
 		<th>Path</th>
 		<th>State</th>
 		<th>Applied At</th>
+		<th></th>
 	</tr>
 	</thead>
 	<tbody>
   {{range .Result}}
-      {{template "migrations status row" .}}
+    {{$isApplied := not .AppliedAt.IsZero}}
+	  <tr {{with .Source}}data-version='{{.Version}}'{{end}}>
+		  <td>{{with .Source}}{{.Version}}{{end}}</td>
+		  <td>{{with .Source}}{{.Type}}{{end}}</td>
+		  <td>{{with .Source}}{{.Path}}{{end}}</td>
+		  <td>{{.State}}</td>
+		  <td>{{if $isApplied}}{{.AppliedAt}}{{else}}<em>N/A</em>{{end}}</td>
+		  <td>{{if $isApplied}}{{template "applied source buttons" .Source}}{{else}}{{template "pending source buttons" .Source}}{{end}}</td>
+	  </tr>
   {{end -}}
 	</tbody>
 </table>
+{{- end}}
+
+{{define "POST /up-to/{version} UpTo(ctx, version)"}}
+    {{if .Err}}
+			<p>{{.Err.Error}}</p>
+    {{else if ne 0 (len .Result)}}
+        {{$_ := .TriggerRefreshMigrations}}
+				<div>
+					<h3>Migrate Up Succeeded</h3>
+            {{range .Result}}
+                {{template "migrate result" .}}
+            {{end}}
+				</div>
+    {{else}}
+			<div>
+				<h3>Fully Migrated</h3>
+			</div>
+    {{end}}
+{{end}}
+
+{{define "POST /down-to/{version} DownTo(ctx, version)" -}}
+    {{with .Err}}
+			<p>{{.Error}}</p>
+    {{else}}
+        {{$_ := .TriggerRefreshMigrations}}
+				<div>
+					<h3>Migrate Down Succeeded</h3>
+            {{range .Result}}
+                {{template "migrate result" .}}
+            {{end}}
+				</div>
+    {{end}}
 {{- end}}
 
 {{define "migrate result"}}
@@ -54,10 +92,11 @@
 {{define "POST /up Up(ctx)"}}
     {{if .Err}}
 			<p>{{.Err.Error}}</p>
-    {{else if .Result}}
+    {{else if ne 0 (len .Result)}}
+	    {{$_ := .TriggerRefreshMigrations}}
 			<div>
 				<h3>Migrate Up Succeeded</h3>
-          {{range (.Header "HX-Trigger" `{"refreshMigrations":{"target" : ".status-table"}}`).Result}}
+          {{range .Result}}
               {{template "migrate result" .}}
           {{end}}
 			</div>
@@ -72,15 +111,15 @@
     {{with .Err}}
 			<p>{{.Error}}</p>
     {{else}}
+      {{$_ := .TriggerRefreshMigrations}}
 			<div>
 				<h3>Migrate Down Succeeded</h3>
-
-          {{template "migrate result" (.Header "HX-Trigger" `{"refreshMigrations":{"target" : ".status-table"}}`).Result}}
+        {{template "migrate result" .Result}}
 			</div>
     {{end}}
 {{end}}
 
-{{define "GET / Status(ctx)"}}
+{{define "status page"}}
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
@@ -95,16 +134,23 @@
 		</hgroup>
 		<nav><ul></ul></nav>
 	</header>
-	<main id="status" class="container" hx-target='closest #status'>
-		<section>{{with .Err}}<pre style='padding: 1rem'>{{.}}</pre>{{else}}{{template "Status" .}}{{end}}</section>
-		<button hx-get='{{.Path.Status}}' hx-select='#status' hx-swap='outerHTML'>Refresh</button>
-	</main>
-	<section class='container'>
-		<h2>Migrate</h2>
-		<button hx-post='{{.Path.Up}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>Up</button>
-		<button hx-post='{{.Path.Down}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>Down</button>
+	<main class="container">
+		<section>{{with .Err}}<pre style='padding: 1rem'>{{.}}</pre>{{else}}{{template "status-table" .}}{{end}}</section>
+		<div role='group'>
+			<button hx-get='{{.Path.Status}}' hx-target='#status' hx-swap='outerHTML'>Refresh</button>
+			<button hx-post='{{.Path.Up}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>All the way up</button>
+			<button hx-post='{{.Path.Down}}' hx-target-error='#migrate-result' hx-target='#migrate-result'>Down by one</button>
+		</div>
 		<div id='migrate-result'></div>
-	</section>
+	</main>
 	</body>
 	</html>
+{{end}}
+
+{{define "GET / Status(ctx)"}}
+	{{if eq (.Request.Header.Get "HX-Target") "status-table"}}
+      {{with .Err}}<pre class='error'>{{.}}</pre>{{else}}{{template "status-table" .}}{{end}}
+	{{else}}
+			{{template "status page" .}}
+	{{end}}
 {{end}}

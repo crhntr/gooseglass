@@ -96,10 +96,10 @@ func Test(t *testing.T) {
 				assert.Equal(t, http.StatusOK, response.StatusCode)
 				document := domtest.ParseResponseDocument(t, response)
 
-				headerColumns := document.QuerySelectorAll(`#status .status-table thead tr th`)
+				headerColumns := document.QuerySelectorAll(`#status #status-table thead tr th`)
 				require.NotNil(t, headerColumns)
 
-				if tbody := document.QuerySelector(`#status .status-table tbody`); assert.NotNil(t, tbody) {
+				if tbody := document.QuerySelector(`#status #status-table tbody`); assert.NotNil(t, tbody) {
 					assert.Equal(t, 1, tbody.ChildElementCount())
 					if tr := tbody.QuerySelector(`tr`); assert.NotNil(t, tr) {
 						columns := tr.QuerySelectorAll(`td`)
