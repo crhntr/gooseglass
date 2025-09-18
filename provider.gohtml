@@ -22,12 +22,12 @@
 	<caption>Migrations Status</caption>
 	<thead>
 	<tr>
-		<th>Version</th>
-		<th>Type</th>
-		<th>Path</th>
-		<th>State</th>
-		<th>Applied At</th>
-		<th></th>
+		<th>Version
+		<th>Type
+		<th>Path
+		<th>State
+		<th>Applied At
+		<th>
 	</tr>
 	</thead>
 	<tbody>
@@ -46,38 +46,6 @@
 </table>
 {{- end}}
 
-{{define "POST /up-to/{version} UpTo(ctx, version)"}}
-    {{if .Err}}
-			<p>{{.Err.Error}}</p>
-    {{else if ne 0 (len .Result)}}
-        {{$_ := .TriggerRefreshMigrations}}
-				<div>
-					<h3>Migrate Up Succeeded</h3>
-            {{range .Result}}
-                {{template "migrate result" .}}
-            {{end}}
-				</div>
-    {{else}}
-			<div>
-				<h3>Fully Migrated</h3>
-			</div>
-    {{end}}
-{{end}}
-
-{{define "POST /down-to/{version} DownTo(ctx, version)" -}}
-    {{with .Err}}
-			<p>{{.Error}}</p>
-    {{else}}
-        {{$_ := .TriggerRefreshMigrations}}
-				<div>
-					<h3>Migrate Down Succeeded</h3>
-            {{range .Result}}
-                {{template "migrate result" .}}
-            {{end}}
-				</div>
-    {{end}}
-{{- end}}
-
 {{define "migrate result"}}
     {{/* gotype: github.com/pressly/goose/v3.MigrationResult*/}}
     {{if  .Error}}
@@ -89,37 +57,7 @@
     {{end}}
 {{end}}
 
-{{define "POST /up Up(ctx)"}}
-    {{if .Err}}
-			<p>{{.Err.Error}}</p>
-    {{else if ne 0 (len .Result)}}
-	    {{$_ := .TriggerRefreshMigrations}}
-			<div>
-				<h3>Migrate Up Succeeded</h3>
-          {{range .Result}}
-              {{template "migrate result" .}}
-          {{end}}
-			</div>
-    {{else}}
-			<div>
-				<h3>Fully Migrated</h3>
-			</div>
-    {{end}}
-{{end}}
-
-{{define "POST /down Down(ctx)"}}
-    {{with .Err}}
-			<p>{{.Error}}</p>
-    {{else}}
-      {{$_ := .TriggerRefreshMigrations}}
-			<div>
-				<h3>Migrate Down Succeeded</h3>
-        {{template "migrate result" .Result}}
-			</div>
-    {{end}}
-{{end}}
-
-{{define "status page"}}
+{{define "status page" -}}
 	<!DOCTYPE html>
 	<html lang="en">
 	<head>
@@ -145,12 +83,74 @@
 	</main>
 	</body>
 	</html>
+{{- end}}
+
+{{define "POST /up-to/{version} UpTo(ctx, version)" -}}
+  {{if .Err}}
+		<p>{{.Err.Error}}</p>
+  {{else if ne 0 (len .Result)}}
+      {{$_ := .TriggerRefreshMigrations}}
+			<div>
+				<h3>Migrate Up to {{.Request.PathValue "version"}} Succeeded</h3>
+          {{range .Result}}
+              {{template "migrate result" .}}
+          {{end}}
+			</div>
+  {{else}}
+		<div>
+			<h3>Fully Migrated</h3>
+		</div>
+  {{end}}
 {{end}}
 
-{{define "GET / Status(ctx)"}}
-	{{if eq (.Request.Header.Get "HX-Target") "status-table"}}
-      {{with .Err}}<pre class='error'>{{.}}</pre>{{else}}{{template "status-table" .}}{{end}}
+{{define "POST /down-to/{version} DownTo(ctx, version)" -}}
+  {{with .Err}}
+		<p>{{.Error}}</p>
+  {{else}}
+    {{$_ := .TriggerRefreshMigrations}}
+		<div>
+			<h3>Migrate Down to {{.Request.PathValue "version"}} Succeeded</h3>
+        {{range .Result}}
+            {{template "migrate result" .}}
+        {{end}}
+		</div>
+  {{end}}
+{{- end}}
+
+{{define "POST /up Up(ctx)" -}}
+  {{if .Err}}
+		<p>{{.Err.Error}}</p>
+  {{else if ne 0 (len .Result)}}
+    {{$_ := .TriggerRefreshMigrations}}
+		<div>
+			<h3>Migrate Up Succeeded</h3>
+        {{range .Result}}
+            {{template "migrate result" .}}
+        {{end}}
+		</div>
+  {{else}}
+		<div>
+			<h3>Fully Migrated</h3>
+		</div>
+  {{end}}
+{{end}}
+
+{{define "POST /down Down(ctx)" -}}
+	{{with .Err}}
+		<p>{{.Error}}</p>
 	{{else}}
-			{{template "status page" .}}
+	  {{$_ := .TriggerRefreshMigrations}}
+		<div>
+			<h3>Migrate Down Succeeded</h3>
+	    {{template "migrate result" .Result}}
+		</div>
+	{{end}}
+{{end}}
+
+{{define "GET / Status(ctx)" -}}
+	{{if eq (.Request.Header.Get "HX-Target") "status-table"}}
+    {{with .Err}}<pre class='error'>{{.}}</pre>{{else}}{{template "status-table" .}}{{end}}
+	{{else}}
+		{{template "status page" .}}
 	{{end}}
 {{end}}

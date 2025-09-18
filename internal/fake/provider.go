@@ -5,6 +5,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/crhntr/gooseglass"
 	goose "github.com/pressly/goose/v3"
 )
 
@@ -423,3 +424,5 @@ func (fake *Provider) recordInvocation(key string, args []interface{}) {
 	}
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
+
+var _ gooseglass.Provider = new(Provider)
