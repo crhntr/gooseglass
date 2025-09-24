@@ -18,51 +18,33 @@ package main
 import (
 	"cmp"
 	"database/sql"
+	"embed"
+	"io/fs"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 
-	"github.com/crhntr/gooseglass"
+	"github.com/crhntr/libsqlgoose"
 	"github.com/pressly/goose/v3"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 	_ "modernc.org/sqlite"
 
-	"example.com/internal/database"
+	"github.com/crhntr/gooseglass"
 )
 
 func main() {
-	var level = slog.LevelInfo
-	if ll, ok := os.LookupEnv("LOG_LEVEL"); ok {
-		if err := (&level).UnmarshalText([]byte(ll)); err != nil {
-			log.Fatal(err)
-		}
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: level,
-		})))
-		if level >= slog.LevelDebug {
-			goose.SetLogger(slog.NewLogLogger(slog.Default().Handler(), level))
-			goose.SetVerbose(level >= slog.LevelDebug)
-		}
-	}
+	setupLogger()
 	log.Println("Starting Migration Server")
 
-	dbURL, ok := os.LookupEnv("DATABASE_URL")
-	if !ok {
-		log.Fatal("DATABASE_URL environment variable not set")
-	}
-
-	db, err := sql.Open("libsql", dbURL)
-	if err != nil {
-		log.Fatalf("failed to open db %s: %s", dbURL, err)
-	}
+	db := openDatabase()
 	defer func() {
-		if err = db.Close(); err != nil {
-			log.Printf("failed to close db connection %s: %s", dbURL, err)
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close db connection: %s", err)
 		}
 	}()
 
-	provider, err := database.MigrationsProvider(db)
+	provider, err := migrationsProvider(db)
 	if err != nil {
 		log.Fatalf("failed to load migrations: %s", err)
 	}
@@ -79,4 +61,44 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+func migrationsProvider(db *sql.DB, opt ...goose.ProviderOption) (*goose.Provider, error) {
+	dir, err := fs.Sub(migrations, "migrations")
+	if err != nil {
+		return nil, err
+	}
+	opt = append(opt, goose.WithStore(libsqlgoose.NewStore()))
+	return goose.NewProvider(libsqlgoose.Dialect, db, dir, opt...)
+}
+
+func openDatabase() *sql.DB {
+	dbURL, ok := os.LookupEnv("DATABASE_URL")
+	if !ok {
+		log.Fatal("DATABASE_URL environment variable not set")
+	}
+
+	db, err := sql.Open("libsql", dbURL)
+	if err != nil {
+		log.Fatalf("failed to open db %s: %s", dbURL, err)
+	}
+	return db
+}
+
+func setupLogger() {
+	if ll, ok := os.LookupEnv("LOG_LEVEL"); ok {
+		var level = slog.LevelInfo
+		if err := (&level).UnmarshalText([]byte(ll)); err != nil {
+			log.Fatal(err)
+		}
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: level,
+		})))
+		if level >= slog.LevelDebug {
+			goose.SetLogger(slog.NewLogLogger(slog.Default().Handler(), level))
+			goose.SetVerbose(level >= slog.LevelDebug)
+		}
+	}
+}
 ```
