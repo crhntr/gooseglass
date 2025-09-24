@@ -1,4 +1,4 @@
-package gooseglass
+package gooseglass_test
 
 import (
 	"net/http"
@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/crhntr/gooseglass"
 	"github.com/crhntr/gooseglass/internal/fake"
 )
 
@@ -53,7 +54,7 @@ func Test(t *testing.T) {
 		}
 
 		mux := http.NewServeMux()
-		routes(mux, fakes.provider)
+		gooseglass.Pages(mux, fakes.provider)
 
 		require.NotNil(t, tc.When)
 		req := tc.When(t, When{})
@@ -74,7 +75,7 @@ func Test(t *testing.T) {
 				g.provider.StatusReturns([]*goose.MigrationStatus{}, nil)
 			},
 			When: func(t *testing.T, when When) *http.Request {
-				req := httptest.NewRequest(http.MethodGet, TemplateRoutePaths{}.Status(), nil)
+				req := httptest.NewRequest(http.MethodGet, gooseglass.TemplateRoutePaths{}.Status(), nil)
 				return req
 			},
 			Then: func(t *testing.T, when Then, then *http.Response) {
@@ -89,7 +90,7 @@ func Test(t *testing.T) {
 				}, nil)
 			},
 			When: func(t *testing.T, when When) *http.Request {
-				req := httptest.NewRequest(http.MethodGet, TemplateRoutePaths{}.Status(), nil)
+				req := httptest.NewRequest(http.MethodGet, gooseglass.TemplateRoutePaths{}.Status(), nil)
 				return req
 			},
 			Then: func(t *testing.T, then Then, response *http.Response) {
