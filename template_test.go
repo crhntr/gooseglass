@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/crhntr/dom/domtest"
 	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/typelate/dom/domtest"
 
 	"github.com/crhntr/gooseglass"
 	"github.com/crhntr/gooseglass/internal/fake"
