@@ -17,8 +17,9 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
-	github.com/typelate/check v0.0.1 // indirect
-	github.com/typelate/muxt v0.18.0-dev.1 // indirect
+	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/typelate/check v0.0.3 // indirect
+	github.com/typelate/muxt v0.18.0-dev.6 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect

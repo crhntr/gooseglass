@@ -14,6 +14,6 @@ var templates = template.Must(template.ParseFS(templateFiles, "*"))
 
 func Pages(mux *http.ServeMux, provider Provider) { routes(mux, provider) }
 
-func (td *templateData[T]) TriggerRefreshMigrations() *templateData[T] {
+func (td *templateData[R, T]) TriggerRefreshMigrations() *templateData[R, T] {
 	return td.Header("HX-Trigger", `{"refreshMigrations":{"target":"#status-table"}}`)
 }
