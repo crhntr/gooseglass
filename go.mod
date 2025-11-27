@@ -3,7 +3,7 @@ module github.com/crhntr/gooseglass
 go 1.25.0
 
 require (
-	github.com/pressly/goose/v3 v3.25.0
+	github.com/pressly/goose/v3 v3.26.0
 	github.com/stretchr/testify v1.11.1
 	github.com/typelate/dom v0.6.1
 )
