@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/stretchr/testify v1.12.1
-	github.com/typelate/dom v0.7.2
+	github.com/typelate/dom v0.9.0
 )
 
 require (
-	github.com/andybalholm/cascadia v1.3.3 // indirect
+	github.com/andybalholm/cascadia v1.3.4 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.1 // indirect
