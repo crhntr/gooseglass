@@ -3,7 +3,7 @@ module github.com/crhntr/gooseglass
 go 1.26.0
 
 require (
-	github.com/pressly/goose/v3 v3.30.0
+	github.com/pressly/goose/v3 v3.30.1
 	github.com/stretchr/testify v1.12.1
 	github.com/typelate/dom v0.10.0
 )
@@ -13,7 +13,7 @@ require (
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.1 // indirect
-	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/mfridman/interpolate v0.2.0 // indirect
 	github.com/sethvargo/go-retry v0.5.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
